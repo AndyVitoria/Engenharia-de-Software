@@ -26,10 +26,7 @@ def f_separaSilaba(palavra):
                     if palavra[pos:pos+1] in conscomp:
                         inicio = pos
                         pos+=1
-                    elif palavra[pos] in cons and palavra[pos+1] in cons:
-                        fim = pos
-                        check = True
-                    elif pos == len(palavra)-1:
+                    elif (palavra[pos] in cons and palavra[pos+1] in cons) or (pos == len(palavra)-1):
                         fim = pos
                         check = True
                     else:
