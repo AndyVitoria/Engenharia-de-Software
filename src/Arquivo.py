@@ -14,11 +14,11 @@ def abrir(dir):
 def escrever(dir, lst):
     arq = open(dir, 'wt', encoding='utf8')
     for elem in lst:
-        arq.write(elem + '\n')
+        arq.write(str(elem) + '\n')
     arq.close()
     return
 
-def setMetadados(automato):
+def set_metadados(automato):
     ordem = ['states', 'alfabeth', 'init', 'finals', 'trans']
     listaSaida = [automato['version']]
     for item in ordem[:-1]:
@@ -33,7 +33,7 @@ def setMetadados(automato):
         listaSaida.append(stringTemp)
     return listaSaida + ['trans']
 
-def setTransicoes(automato):
+def set_transicoes(automato):
     trans = 'trans'
     listaTransicoes = []
     for chave in automato[trans]:
@@ -48,6 +48,6 @@ def setTransicoes(automato):
         listaTransicoes.append(stringTemp)
     return sorted(listaTransicoes) + ['end']
 
-def salvaAutomato(dir, automato):
-    listaSaida = setMetadados(automato) + setTransicoes(automato)
+def salva_automato(dir, automato):
+    listaSaida = set_metadados(automato) + set_transicoes(automato)
     escrever(dir, listaSaida)

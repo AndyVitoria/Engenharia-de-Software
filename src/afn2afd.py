@@ -5,7 +5,7 @@ import Arquivo
 import sys
 
 
-def arquivoAFN(diretorio):
+def arquivo_afn(diretorio):
     arquivo = Arquivo.abrir(diretorio)
     automatoFN = {'version': arquivo[0]}
 
@@ -22,37 +22,37 @@ def arquivoAFN(diretorio):
     return automatoFN
 
 
-def getNode(chave, trans):
+def get_node(chave, trans):
     if chave in trans:
         return trans[chave]
     return None
 
 
-def removeRepeticoes(lista):
+def remove_repeticoes(lista):
     dic = {}
     for elem in lista:
         dic[elem] = None
     lista[:] = sorted(dic.keys())
 
 
-def printM(dic):
+def print_matriz(dic):
     print()
-    for elem in dic:
+    for elem in sorted(dic.keys()):
         print(elem, end='')
         print(':', end='')
         print(dic[elem], end='\n')
 
 
-def nodeInicial(listaInicial):
+def node_inicial(listaInicial):
     nodes = []
     for linha in listaInicial:
         nodes.append(tuple(linha))
     return nodes
 
 
-def preencheMatriz(automatoFN):
+def preenche_matriz(automatoFN):
     # Carrega todos os nós iniciais
-    nodes = nodeInicial(automatoFN['init'])
+    nodes = node_inicial(automatoFN['init'])
     matrizConversao = {}
     trans = automatoFN['trans']
     index = 0
@@ -68,10 +68,10 @@ def preencheMatriz(automatoFN):
             listaTemp = []
             # Percorre os nós dento do conjunto de nós da nova chave gerada.
             for node in chave:
-                result = getNode((node, caractere), trans)
+                result = get_node((node, caractere), trans)
                 if not (result is None):
                     listaTemp += result
-            removeRepeticoes(listaTemp)
+            remove_repeticoes(listaTemp)
 
             matrizConversao[chave].append(tuple(listaTemp))
             # Se for um novo nó adiciona a lista a ser percorrida
@@ -79,11 +79,10 @@ def preencheMatriz(automatoFN):
                 nodes.append(tuple(listaTemp))
 
         index += 1
-    # printM(matrizConversao)
     return matrizConversao
 
 
-def setFinal(nodes, init):
+def set_final(nodes, init):
     lst = []
     for index in range(0, len(nodes), 1):
         check = False
@@ -95,7 +94,7 @@ def setFinal(nodes, init):
     return lst
 
 
-def trocaNomeclatura(nodes):
+def troca_nomeclatura(nodes):
     dic = {}
     i = 0
     for elem in nodes:
@@ -104,9 +103,9 @@ def trocaNomeclatura(nodes):
     return dic
 
 
-def geraAFD(alfa, nodes, init, finals, matriz, dicNomes):
-    automatoFD = {'alfabeth': alfa, 'init': [], 'finals': [], 'trans': {}, 'version': 'AFD version 1', 'states': 0}
-    automatoFD['init'].append(dicNomes[init])
+def gera_afd(alfa, nodes, init, finals, matriz, dicNomes):
+    automatoFD = {'alfabeth': alfa, 'init': [dicNomes[init]], 'finals': [], 'trans': {}, 'version': 'AFD version 1', 'states': 0}
+
     for chave in nodes:
 
         if chave in finals:
@@ -121,18 +120,18 @@ def geraAFD(alfa, nodes, init, finals, matriz, dicNomes):
     return automatoFD
 
 
-def toAFD(automatoFN):
+def afn2afd(automatoFN):
     nodes = []
 
-    matrizConversao = preencheMatriz(automatoFN)
+    matrizConversao = preenche_matriz(automatoFN)
     nodes[:] = sorted(matrizConversao.keys())
     # Inserção dos novos nós iniciais e finais
     init = tuple(automatoFN['init'])
-    finals = setFinal(nodes, automatoFN['finals'])
+    finals = set_final(nodes, automatoFN['finals'])
     # Renomea os nós
-    dicNomes = trocaNomeclatura(nodes)
+    dicNomes = troca_nomeclatura(nodes)
 
-    return geraAFD(automatoFN['alfabeth'], nodes, init, finals, matrizConversao, dicNomes)
+    return gera_afd(automatoFN['alfabeth'], nodes, init, finals, matrizConversao, dicNomes)
 
 
 def main():
@@ -140,11 +139,11 @@ def main():
     sys.argv.append(sys.argv[1][:-3] + 'afd')
     # ========================================#
     print("Abrindo arquivo AFN")
-    automatoFN = arquivoAFN(sys.argv[1])
+    automatoFN = arquivo_afn(sys.argv[1])
     print("Convertendo para AFD")
-    automatoFD = toAFD(automatoFN)
+    automatoFD = afn2afd(automatoFN)
 
-    Arquivo.salvaAutomato(sys.argv[2], automatoFD)
+    Arquivo.salva_automato(sys.argv[2], automatoFD)
     return
 
 
