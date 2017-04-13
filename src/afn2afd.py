@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import Arquivo, sys
+import Arquivo
+import sys
 
 
 def arquivoAFN(diretorio):
     arquivo = Arquivo.abrir(diretorio)
-    automatoFN = {}
+    automatoFN = {'version': arquivo[0]}
 
-    # Captura os elementos entre sates e trans
+    # Captura os elementos entre states e trans
     for linha in arquivo[1:5]:
         elementos = linha.split(' ')
         automatoFN[elementos[0]] = elementos[1:]
@@ -26,13 +27,13 @@ def getNode(chave, trans):
         return trans[chave]
     return None
 
-def removeRepetidos(lista):
+
+def removeRepeticoes(lista):
     dic = {}
-    lst = []
     for elem in lista:
         dic[elem] = None
-    lst[:] = dic.keys()
-    return lst
+    lista[:] = sorted(dic.keys())
+
 
 def printM(dic):
     print()
@@ -41,37 +42,48 @@ def printM(dic):
         print(':', end='')
         print(dic[elem], end='\n')
 
-def preencheMatriz(automatoFN):
-    nodes = []
-    for i in automatoFN['init']:
-        nodes.append(tuple(i))
 
-    check = True
+def nodeInicial(listaInicial):
+    nodes = []
+    for linha in listaInicial:
+        nodes.append(tuple(linha))
+    return nodes
+
+
+def preencheMatriz(automatoFN):
+    # Carrega todos os nós iniciais
+    nodes = nodeInicial(automatoFN['init'])
     matrizConversao = {}
     trans = automatoFN['trans']
-
     index = 0
+
+    # Percorre a lista com os novos nós e adiciona um novo nó que não esta
+    # nela, se encontrado.
     while index < len(nodes):
         chave = nodes[index]
-
         if not chave in matrizConversao:
             matrizConversao[chave] = []
+
         for caractere in automatoFN['alfabeth']:
             listaTemp = []
+            # Percorre os nós dento do conjunto de nós da nova chave gerada.
             for node in chave:
                 result = getNode((node, caractere), trans)
-                if result != None and not result in listaTemp:
+                if not (result is None):
                     listaTemp += result
-            listaTemp = sorted(removeRepetidos(listaTemp))
+            removeRepeticoes(listaTemp)
+
             matrizConversao[chave].append(tuple(listaTemp))
+            # Se for um novo nó adiciona a lista a ser percorrida
             if not tuple(listaTemp) in nodes:
                 nodes.append(tuple(listaTemp))
+
         index += 1
-    printM(matrizConversao)
+    # printM(matrizConversao)
     return matrizConversao
 
-def setInicioFinal(nodes, init):
-    print(nodes, init)
+
+def setFinal(nodes, init):
     lst = []
     for index in range(0, len(nodes), 1):
         check = False
@@ -91,47 +103,48 @@ def trocaNomeclatura(nodes):
         i += 1
     return dic
 
-def geraAFD(alfa, nodes, init, finals, matriz, dicNomes):
-    automatoFD  = {'alfabeth': alfa, 'init': [], 'finals' : [], 'trans' : {}}
 
+def geraAFD(alfa, nodes, init, finals, matriz, dicNomes):
+    automatoFD = {'alfabeth': alfa, 'init': [], 'finals': [], 'trans': {}, 'version': 'AFD version 1', 'states': 0}
+    automatoFD['init'].append(dicNomes[init])
     for chave in nodes:
-        if chave in init:
-            automatoFD['init'].append(dicNomes[chave])
+
         if chave in finals:
             automatoFD['finals'].append(dicNomes[chave])
-        if chave in matriz:
+        if chave in matriz.keys():
             trans = []
             index = 0
             for elem in matriz[chave]:
                 automatoFD['trans'][(dicNomes[chave], alfa[index])] = dicNomes[elem]
                 index += 1
+    automatoFD['states'] = max(automatoFD['trans'].keys())[0] + 1
     return automatoFD
+
 
 def toAFD(automatoFN):
     nodes = []
-    automatoFD = {}
-    matrizConversao = preencheMatriz(automatoFN)
-    nodes[:] = matrizConversao.keys()
 
-    init = setInicioFinal(nodes, automatoFN['init'])
-    finals = setInicioFinal(nodes, automatoFN['finals'])
+    matrizConversao = preencheMatriz(automatoFN)
+    nodes[:] = sorted(matrizConversao.keys())
+    # Inserção dos novos nós iniciais e finais
+    init = tuple(automatoFN['init'])
+    finals = setFinal(nodes, automatoFN['finals'])
+    # Renomea os nós
     dicNomes = trocaNomeclatura(nodes)
-    print(dicNomes)
-    return geraAFD(automatoFN['alfabeth'], nodes, init, finals, matrizConversao ,dicNomes)
+
+    return geraAFD(automatoFN['alfabeth'], nodes, init, finals, matrizConversao, dicNomes)
+
 
 def main():
     # ========================================#
     sys.argv.append(sys.argv[1][:-3] + 'afd')
     # ========================================#
+    print("Abrindo arquivo AFN")
     automatoFN = arquivoAFN(sys.argv[1])
-    print(automatoFN)
+    print("Convertendo para AFD")
     automatoFD = toAFD(automatoFN)
-    print(automatoFD)
 
-
-
-
-
+    Arquivo.salvaAutomato(sys.argv[2], automatoFD)
     return
 
 

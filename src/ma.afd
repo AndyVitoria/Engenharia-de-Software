@@ -1,0 +1,21 @@
+AFD version 1
+states 7
+alfabeth a b
+init 0
+finals 2 3 5 6
+trans
+0 a 1
+0 b 4
+1 a 2
+1 b 2
+2 a 2
+2 b 2
+3 a 2
+3 b 5
+4 a 6
+4 b 3
+5 a 5
+5 b 3
+6 a 5
+6 b 6
+end
