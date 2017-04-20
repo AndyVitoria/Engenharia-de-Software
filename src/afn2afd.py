@@ -1,88 +1,74 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+"""Exercicio 1 Trabalho de LFA
+Aluno: Andre Barbosa da Vitoria
+"""
 import Arquivo
 import sys
 
 
-def arquivo_afn(diretorio):
-    arquivo = Arquivo.abrir(diretorio)
-    automatoFN = {'version': arquivo[0]}
-
-    # Captura os elementos entre states e trans
-    for linha in arquivo[1:5]:
-        elementos = linha.split(' ')
-        automatoFN[elementos[0]] = elementos[1:]
-    automatoFN['trans'] = {}
-
-    # Captura as transicoes
-    for linha in arquivo[6:-1]:
-        elementos = linha.split(' ')
-        automatoFN['trans'][tuple(elementos[:2])] = elementos[2:]
-    return automatoFN
-
-
 def get_node(chave, trans):
+    """Função de captura de transição
+
+    Função que dada uma chave contendo o nó inicial e o caractere a ser processado retorna o nó de destino
+    """
     if chave in trans:
         return trans[chave]
     return None
 
 
 def remove_repeticoes(lista):
+    """Função de remoção de elementos repetidos em uma lista
+
+    Função que dada uma lista que não contenha listas ou dicionários remove elementos repetidos.
+    """
     dic = {}
     for elem in lista:
         dic[elem] = None
     lista[:] = sorted(dic.keys())
 
 
-def print_matriz(dic):
-    print()
-    for elem in sorted(dic.keys()):
-        print(elem, end='')
-        print(':', end='')
-        print(dic[elem], end='\n')
+def preenche_matriz(automato_fn):
+    """Função de geração de matriz de conversão de AFN para AFD
 
-
-def node_inicial(listaInicial):
-    nodes = []
-    for linha in listaInicial:
-        nodes.append(tuple(linha))
-    return nodes
-
-
-def preenche_matriz(automatoFN):
+    Função que dada um AFN gera uma matriz com as novas transições (como visto em sala de aula) para ser usada no AFD.
+    """
     # Carrega todos os nós iniciais
-    nodes = node_inicial(automatoFN['init'])
-    matrizConversao = {}
-    trans = automatoFN['trans']
+    nodes = [tuple(automato_fn['init'][0])]
+    matriz_conversao = {}
+    trans = automato_fn['trans']
     index = 0
 
     # Percorre a lista com os novos nós e adiciona um novo nó que não esta
     # nela, se encontrado.
     while index < len(nodes):
         chave = nodes[index]
-        if not chave in matrizConversao:
-            matrizConversao[chave] = []
+        if not chave in matriz_conversao:
+            matriz_conversao[chave] = []
 
-        for caractere in automatoFN['alfabeth']:
-            listaTemp = []
+        for caractere in automato_fn['alfabeth']:
+            lista_temp = []
             # Percorre os nós dento do conjunto de nós da nova chave gerada.
             for node in chave:
                 result = get_node((node, caractere), trans)
-                if not (result is None):
-                    listaTemp += result
-            remove_repeticoes(listaTemp)
+                if result is not None:
+                    lista_temp += result
+            remove_repeticoes(lista_temp)
 
-            matrizConversao[chave].append(tuple(listaTemp))
+            matriz_conversao[chave].append(tuple(lista_temp))
             # Se for um novo nó adiciona a lista a ser percorrida
-            if not tuple(listaTemp) in nodes:
-                nodes.append(tuple(listaTemp))
+            if not tuple(lista_temp) in nodes and len(lista_temp) > 0:
+                nodes.append(tuple(lista_temp))
 
         index += 1
-    return matrizConversao
+    return matriz_conversao
 
 
 def set_final(nodes, init):
+    """Função de inserção de nós finais
+
+    Função que dada o AFD gerado a partir de um AFN insere no campo finals, o nós finais do automato.
+    """
     lst = []
     for index in range(0, len(nodes), 1):
         check = False
@@ -95,6 +81,10 @@ def set_final(nodes, init):
 
 
 def troca_nomeclatura(nodes):
+    """Função de renomeação de nós no AFD
+
+    Função que dada o AFD renomeia os nos afim de facilitar a leitura e compreenção do mesmo.
+    """
     dic = {}
     i = 0
     for elem in nodes:
@@ -103,47 +93,67 @@ def troca_nomeclatura(nodes):
     return dic
 
 
-def gera_afd(alfa, nodes, init, finals, matriz, dicNomes):
-    automatoFD = {'alfabeth': alfa, 'init': [dicNomes[init]], 'finals': [], 'trans': {}, 'version': 'AFD version 1', 'states': 0}
+def gera_afd(alfa, nodes, init, finals, matriz, dic_nomes):
+    """Função de criação de AFD
+
+    Função que dada o as informações de um AFD gerada a partir de um AFN, trata e insere na estrutura de um AFD definida neste trabalho, os dados gerados.
+    """
+    automato_fd = {'alfabeth': alfa, 'init': [dic_nomes[init]], 'finals': [], 'trans': {}, 'version': 'AFD version 1',
+                  'states': 0}
 
     for chave in nodes:
 
         if chave in finals:
-            automatoFD['finals'].append(dicNomes[chave])
+            automato_fd['finals'].append(dic_nomes[chave])
         if chave in matriz.keys():
             trans = []
             index = 0
             for elem in matriz[chave]:
-                automatoFD['trans'][(dicNomes[chave], alfa[index])] = dicNomes[elem]
+                if elem != ():
+                    automato_fd['trans'][(dic_nomes[chave], alfa[index])] = dic_nomes[elem]
                 index += 1
-    automatoFD['states'] = max(automatoFD['trans'].keys())[0] + 1
-    return automatoFD
+
+    if len(automato_fd['trans']) > 0:
+        automato_fd['states'] += max(automato_fd['trans'].keys())[0] + 1
+
+    return automato_fd
 
 
-def afn2afd(automatoFN):
+def afn2afd(automato_fn):
+    """Função de conversão de AFN para AFD
+
+    Função que dado um AFN converte para AFD.
+    """
     nodes = []
 
-    matrizConversao = preenche_matriz(automatoFN)
-    nodes[:] = sorted(matrizConversao.keys())
+    matriz_conversao = preenche_matriz(automato_fn)
+    nodes[:] = sorted(matriz_conversao.keys())
     # Inserção dos novos nós iniciais e finais
-    init = tuple(automatoFN['init'])
-    finals = set_final(nodes, automatoFN['finals'])
+    init = tuple(automato_fn['init'])
+    finals = set_final(nodes, automato_fn['finals'])
     # Renomea os nós
-    dicNomes = troca_nomeclatura(nodes)
+    dic_nomes = troca_nomeclatura(nodes)
 
-    return gera_afd(automatoFN['alfabeth'], nodes, init, finals, matrizConversao, dicNomes)
+    return gera_afd(automato_fn['alfabeth'], nodes, init, finals, matriz_conversao, dic_nomes)
 
 
 def main():
-    # ========================================#
-    sys.argv.append(sys.argv[1][:-3] + 'afd')
-    # ========================================#
-    print("Abrindo arquivo AFN")
-    automatoFN = arquivo_afn(sys.argv[1])
-    print("Convertendo para AFD")
-    automatoFD = afn2afd(automatoFN)
+    """Tratamento para caso de ser informado um arquivo de saida
 
-    Arquivo.salva_automato(sys.argv[2], automatoFD)
+    Insere um elemento a mais na lista ARGV, dessa forma garantindo que exista um elemento na posição 2 e este será usado como arquivo de saia.
+    """
+    sys.argv.append(sys.argv[1][:-3] + 'afd')
+
+    print("Abrindo arquivo AFN")
+    automato_fn = Arquivo.abrir_automato(sys.argv[1])
+    if automato_fn is not None:
+        print("Convertendo para AFD")
+        automato_fd = afn2afd(automato_fn)
+
+        Arquivo.salva_automato(sys.argv[2], automato_fd)
+    else:
+        print("Erro ao abrir o arquivo " + sys.argv[1])
+        print("Processo Abortado.")
     return
 
 
